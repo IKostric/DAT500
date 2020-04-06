@@ -1,0 +1,2 @@
+Arguments: ['--type=global', '-v', '-r', 'hadoop']
+Running 'global' model.
