@@ -6,6 +6,12 @@ import pickle
 class GPGA(MRJob):
     DIRS = ['../data', '../support']
 
+    def configure_args(self):
+        super(MRYourJob, self).configure_args()
+        self.add_passthru_arg('-l', '--locations', default='data/locations.json')
+        self.add_passthru_arg('-p', '--population-size', default=10, type=int)
+        self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
+
     def mapper_init(self):
         from support.fitness import evalDistance
         # with open('data/locations.pickle', 'rb') as f:
@@ -15,6 +21,7 @@ class GPGA(MRJob):
             
         for i in range(5):#len(data['distances'])):
             yield _, str(i) + ",1,2,3"
+
 
     def mapper(self, _, value):
         from support.fitness import evalDistance
@@ -41,7 +48,7 @@ class GPGA(MRJob):
                     ] + [
                 MRStep(mapper=self.mapper,
                         reducer=self.reducer)        
-                    ]*1 + [
+                    ]*self.options.num_iterations + [
                 MRStep(mapper=self.mapper,
                         reducer=self.reducer_last)
                 ]
