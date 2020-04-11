@@ -1,3 +1,4 @@
+#%%
 from __future__ import print_function
 
 import sys, json, argparse
@@ -10,7 +11,7 @@ from Models.SGA import SGA
 from Models.GlobalPGA import GPGA
 from Models.IslandPGA import IPGA
 
-
+#%%
 class GA():
     def __init__(self):
         self._parseargs()
@@ -19,42 +20,25 @@ class GA():
     def run(self):
         # init model
         self._select_model()
-
-        # get initial population
-        initial_population = self._get_initial_population()
-        print("Running '{}' model.".format(self.options.model_type), file=sys.stdout)
+        print("Running '{}' model.".format(self.options.model_type))
 
         with Timer() as t:
             if self.options.model_type == "sequential":
                 # run sequential ga
-                self._run_sequential(initial_population)
+                idx, shortest = self._run_sequential()
             else:
                 # run parallel ga
-                self._run_mrjob()
+                idx, shortest = self._run_mrjob()
 
         print('Job finished in {} seconds'.format(t.interval))
-        print('Shortest distance is', self.model.best_fitnesses[-1])
+        print('Shortest distance is {}'.format(shortest[-1]))
 
-        plt.figure()
-        plt.plot(self.model.best_fitnesses)
+        self._get_locations()
+
+        self.plot_route(idx)
         plt.show(block=False)
-
-        plt.figure()
-        self.model._plot(self.model.best)
-        plt.show(block=False)
-
-    def _get_initial_population(self):
-        with open(self.options.locations, 'r') as f:
-            loc = json.load(f)
-
-        locations = np.array(loc['locations'])
-        num_locations = locations.shape[-1]
-        initial_population = []
-        for _ in range(self.options.population_size):
-            dna = np.random.permutation(num_locations).tolist()
-            initial_population.append(dna)
-
-        return np.array(initial_population)
+        self.plot_trend(shortest)
+        plt.show()
 
     def _select_model(self):
         model_type = self.options.model_type 
@@ -68,40 +52,71 @@ class GA():
         else:
             raise Exception("Model choices are: 'sequential', 'global' and 'island'")
 
-    def _run_hadoop(self):
+    def _run_mrjob(self):
         with self.model.make_runner() as runner:
-                runner.run()
+            runner.run()
 
-                for key, value in self.model.parse_output(runner.cat_output()):
-                    print(key, value)
+            if self.options.model_type == "global":
+                distances = []
+                for idx, dist in self.model.parse_output(runner.cat_output()): 
+                    distances.append(dist)
+            else:
+                for idx, distances in self.model.parse_output(runner.cat_output()):
+                    pass
+
+        return np.array(idx, dtype=int), np.array(distances)
 
 
-    def _run_sequential(self, initial_population):
-        self.model.run(initial_population)
+    def _run_sequential(self):
+        self.model.run()
+        return self.model.best, self.model.best_fitnesses
 
+    def plot_route(self, dna):
+        # TODO title, legend osv.
+        loc = self.locations.T
+        dna = np.pad(dna, (0, 1), 'wrap')
+        plt.figure()
+        plt.scatter(*loc)
+        plt.plot(*loc[:,dna])
+
+    def plot_trend(self, arr):
+        # TODO title, legend osv.
+        plt.figure()
+        plt.plot(arr)
+
+    def _get_locations(self):
+        with open(self.options.locations, 'r') as f:
+            self.locations = np.array(json.load(f))
+       
 
     def _parseargs(self):
         parser = argparse.ArgumentParser()
 
         parser.add_argument('-t', '--model-type', default='sequential')
+        parser.add_argument('-d', '--locations', default='data/locations.json')
 
-        parser.add_argument('-l', '--locations', default='data/locations.json')
         parser.add_argument('-p', '--population-size', default=10, type=int)
         parser.add_argument('-n', '--num-iterations', default=10, type=int)
+        parser.add_argument('-l', '--num-locations', default=10, type=int)
 
         self.options, self.args = parser.parse_known_args()
 
         # propagate to mrjob
-        self.args += ['--num-iterations', self.options.num_iterations]
-        self.args += ['--population-size', self.options.population_size]
+        self.args += ['--num-locations', str(self.options.num_locations)]
+        self.args += ['--num-iterations', str(self.options.num_iterations)]
+        self.args += ['--population-size', str(self.options.population_size)]
         self.args += ['--locations', self.options.locations]
         self.args.insert(0, "data/input.txt")
 
-
+#%%
 if __name__ == '__main__':
     ga = GA()
+    # ga.options.num_locations = 100
+    # ga.options.population_size = 100
+    # ga.options.num_iterations = 1000
     ga.run()
-    import os
-    print(os.getcwd())
+    # import os
+    # print(os.getcwd())
 
-    
+
+# %%

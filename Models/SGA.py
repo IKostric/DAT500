@@ -1,5 +1,5 @@
 #%%
-from support.fitness import evalDistance
+from support.fitness import evalDistance, calcDistance
 from support.DNA import crossover, mutation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,12 +19,12 @@ class SGA():
         self.options = options
         print(options)
 
-    def run(self, population):
+    def run(self):
         self.best_fitnesses = []
 
         # print(population)
         self._get_locations()
-
+        population = self._get_initial_population()
         fitness = self._get_finesses(population)
 
         # ga algorithm
@@ -58,32 +58,32 @@ class SGA():
 
     def _get_locations(self):
         with open(self.options.locations, 'r') as f:
-            self.locations = json.load(f)
+            self.locations = np.array(json.load(f))
 
-        self.points = np.array(self.locations['locations'])
-        self.distance_matrix = np.array(self.locations['distances'])
+        # self.distance_matrix = np.array(self.locations['distances'])
+
+    def _get_initial_population(self):
+        num_locations = self.options.num_locations
+
+        initial_population = []
+        for _ in range(self.options.population_size):
+            dna = np.random.permutation(num_locations).tolist()
+            initial_population.append(dna)
+
+        return np.array(initial_population)
 
     def _get_finesses(self, population):
         fitnesses = []
-        for pop in population:
-            fitness = evalDistance(pop, self.distance_matrix)
+        for idx in population:
+            # fitness = evalDistance(pop, self.distance_matrix)
+            fitness = calcDistance(self.locations[idx])
             fitnesses.append(fitness)
 
-        # plot
         ind = np.argmin(fitnesses)
-        # self._plot(population[ind])
         self.best_fitnesses.append(min(fitnesses))
-        # print('Shortest:', self.best_fitnesses[-1])
-        # end plot
         
         fitnesses = 1/np.array(fitnesses)
         return fitnesses/np.sum(fitnesses)
-
-    def _plot(self, dna):
-        dna = np.pad(dna, (0, 1), 'wrap')
-        plt.scatter(*self.points)
-        plt.plot(*self.points[:,dna])
-        plt.show()
 
 
 #%%
