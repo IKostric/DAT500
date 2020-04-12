@@ -73,16 +73,16 @@ class SGA():
         return np.array(initial_population)
 
     def _get_finesses(self, population):
-        fitnesses = []
+        distances = []
         for idx in population:
             # fitness = evalDistance(pop, self.distance_matrix)
-            fitness = calcDistance(self.locations[idx])
-            fitnesses.append(fitness)
+            distance = calcDistance(self.locations[idx])
+            distances.append(distance)
 
-        ind = np.argmin(fitnesses)
-        self.best_fitnesses.append(min(fitnesses))
+        ind = np.argmin(distances)
+        self.best_fitnesses.append(min(distances))
         
-        fitnesses = 1/np.array(fitnesses)
+        fitnesses = 1/(np.array(distances)**2)
         return fitnesses/np.sum(fitnesses)
 
 
