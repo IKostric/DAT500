@@ -1,29 +1,23 @@
 #%%
-from support.fitness import evalDistance, calcDistance
+from support.fitness import calcDistance
 from support.DNA import crossover, mutation
-import matplotlib.pyplot as plt
 import numpy as np
 import json
-
-test = None
-
-# def getFileContents(filename):
-#     with open(filename, 'r') as f:
-#         contents = [line for line in f]
-
-#     return contents
 
 #%%
 class SGA():
     def __init__(self, options):
         self.options = options
+        self.locations = None
         print(options)
 
     def run(self):
         self.best_fitnesses = []
 
         # print(population)
-        self._get_locations()
+        if self.locations == None:
+            self._get_locations()
+            
         population = self._get_initial_population()
         fitness = self._get_finesses(population)
 
