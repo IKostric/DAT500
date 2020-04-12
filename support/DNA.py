@@ -2,10 +2,13 @@ import numpy as np
 
 #%%
 def crossover(dna1, dna2):
-    start, end = np.sort(np.random.choice(len(dna1), 2, replace=False))
+    dna1 = np.array(dna1)
+    dna2 = np.array(dna2)
 
+    start, end = np.sort(np.random.choice(len(dna1), 2, replace=False))
+    
     section = dna1[start:end]
-    leftover = dna2[~np.isin(dna2, section)]
+    leftover = np.setdiff1d(dna2, section, assume_unique=True)
 
     child = np.empty_like(dna1)
     child[:start] = leftover[:start]
