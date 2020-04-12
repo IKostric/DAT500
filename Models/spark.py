@@ -1,8 +1,8 @@
 #%%
 import os
 
-# os.getcwd()
-os.chdir("../")
+os.chdir("/home/ivica/DAT500/")
+# print(os.getcwd())
 
 os.environ['SPARK_HOME'] = '/home/ivica/spark-3.0.0-preview2-bin-hadoop3.2'
 
@@ -70,16 +70,18 @@ locations = get_locations()
 
 #%%
 # CONST
-num_locations = 100
-num_iterations = 10
-population_size = 1000
+num_locations = 100000
+num_iterations = 100
+population_size = 100
+fraction_elites = 0.1
 
 initial_population = get_initial_population()
 
 #%%
-
+start = datetime.datetime.now()
 
 init_population = sc.parallelize(initial_population, 4)
+num_elites = int(population_size*fraction_elites)
 # init_population.take(10)
 
 population, distances, fitness = getFitness(init_population)
@@ -89,11 +91,10 @@ shortest = [distances[best_ids[0]]]
 
 for _ in range(num_iterations):
     
-    start = datetime.datetime.now()
     couple_idx = np.random.choice(population_size, \
-        size=(population_size-100, 2), p=fitness.astype(np.float))
+        size=(population_size-num_elites, 2), p=fitness.astype(np.float))
 
-    elite = sc.parallelize(np.atleast_2d(population[best_ids[:100]]), 4)
+    elite = sc.parallelize(np.atleast_2d(population[best_ids[:num_elites]]), 4)
     couples = sc.parallelize(population[couple_idx], 4)
     children = couples\
         .map(crossoverAndMutation)
@@ -103,8 +104,12 @@ for _ in range(num_iterations):
     best_ids = np.argsort(distances)
     shortest.append(distances[best_ids[0]])
 
-    print(datetime.datetime.now() - start)
+print(datetime.datetime.now() - start)
+print("Shortest distance is {}".format(shortest[-1]))
 
-plt.plot(shortest)
+# plt.plot(shortest)
 # %%
+sc.stop()
 
+
+# %%
