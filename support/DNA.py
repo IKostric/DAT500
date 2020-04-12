@@ -2,6 +2,9 @@ import numpy as np
 
 #%%
 def crossover(dna1, dna2):
+    dna1 = np.array(dna1)
+    dna2 = np.array(dna2)
+    
     start, end = np.sort(np.random.choice(len(dna1), 2, replace=False))
 
     section = dna1[start:end]
