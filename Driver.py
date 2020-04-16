@@ -97,6 +97,7 @@ class Driver():
                     distances.append(dist)
             else:
                 for idx, distances in self.model.parse_output(runner.cat_output()):
+                    print("\n\n teset ", idx, distance)
                     pass
                 
         return 1, np.array([1,2,3])#np.array(idx, dtype=int), np.array(distances)

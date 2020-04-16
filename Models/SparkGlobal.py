@@ -24,15 +24,15 @@ class SparkGlobal(MRJob, GA):
         self._get_locations_from_file('locations.json')
 
         # Avoid serialization of the entire object
-        locations = self.locations
-        fitness_func = self.fitness_func
+        locations = sc.broadcast(self.locations)
+        fitness_func = self.fitness_func#.__func__
 
         # spark helper functions
         def get_distance(dna):
-            distance = fitness_func(locations[dna])
+            distance = fitness_func(locations.value[dna])
             return dna, distance, 1/distance
 
-        def getFitness(dist):
+        def unwrap_mat(dist):
             population, distances, fitness = dist.T
             population = np.stack(population)
             fitness = fitness/np.sum(fitness)
@@ -48,12 +48,12 @@ class SparkGlobal(MRJob, GA):
         init_population = sc.parallelize(initial_population, 4)
 
         dist = np.array(init_population
-                    .map(lambda dna: fitness_func(locations[dna]))
+                    .map(get_distance)
                     .collect())
 
-        # population, distances, fitness = getFitness(dist)
-        # best_ids = np.argsort(distances)
-        # shortest = [distances[best_ids[0]]]
+        population, distances, fitness = unwrap_mat(dist)
+        best_ids = np.argsort(distances)
+        shortest = [distances[best_ids[0]]]
 
         # for _ in range(num_iterations):
             
@@ -70,7 +70,9 @@ class SparkGlobal(MRJob, GA):
         #     best_ids = np.argsort(distances)
         #     shortest.append(distances[best_ids[0]])
 
-        # children.saveAsHadoopFile(output_path,
+        # dist.saveAsHadoopFile(output_path,
         #                     'nicknack.MultipleValueOutputFormat')
 
         sc.stop()
+
+        return shortest

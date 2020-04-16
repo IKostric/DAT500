@@ -2,6 +2,17 @@ import numpy as np
 import json
 
 class GA():
+    @staticmethod
+    def fitness_func(dna):
+        dist = np.roll(dna,-1, axis=0) - dna
+        if len(dist.shape) == 1:
+            total_distance = np.sum(abs(dist))
+        else:
+            dist_sqr = np.sum(dist**2, axis=1)
+            total_distance = np.sum(np.sqrt(dist_sqr))
+
+        return total_distance
+
     def crossover(self, dna1, dna2):
         # TODO try to get rid of this two lines
         # in spark
@@ -44,16 +55,6 @@ class GA():
 
         return child1, child2
 
-    def fitness_func(self, dna):
-        dist = np.roll(dna,-1, axis=0) - dna
-        if len(dist.shape) == 1:
-            total_distance = np.sum(abs(dist))
-        else:
-            dist_sqr = np.sum(dist**2, axis=1)
-            total_distance = np.sum(np.sqrt(dist_sqr))
-
-        return total_distance
-
     def _get_two_points(self, dna):
         return np.sort(np.random.choice(len(dna), 2, replace=False))
 
@@ -80,17 +81,6 @@ class GA():
             initial_population[i] = np.random.permutation(num_locations)
 
         return initial_population
-
-    #     # TODO take this part out
-    # def initialize_population(self, _, values):
-    #     num_loc = self.options.num_locations
-    #     pop_size = self.options.population_size
-
-    #     for island in range(4):
-    #         population = np.empty(shape=(pop_size, num_loc), dtype=int)
-    #         for i in range(pop_size):
-    #             population[i] = np.random.permutation(num_loc)
-    #         yield "island-{}".format(island+1), (population.tolist(), [])
 
     def _get_fitnesses(self, population):
         fitnesses = np.empty(len(population))
