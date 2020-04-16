@@ -6,51 +6,86 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Timer import Timer
-
-from Models.SGA import SGA
-from Models.GlobalPGA import GPGA
-from Models.IslandPGA import IPGA
+import Models
 
 #%%
-class GA():
-    def __init__(self):
-        self._parseargs()
+class Driver():
+    def __init__(self, options=None):
+        if options == None:
+            self._parseargs()
+        else:
+            self.options = options
+            self._add_passthru_args()
+        self.model = None
 
 
     def run(self):
         # init model
-        self._select_model()
+        if self.model == None:
+            self.select_model()
         print("Running '{}' model.".format(self.options.model_type))
 
         with Timer() as t:
             if self.options.model_type == "sequential":
                 # run sequential ga
-                idx, shortest = self._run_sequential()
+                result = self._run_sequential()
             else:
                 # run parallel ga
-                idx, shortest = self._run_mrjob()
+                result = self._run_mrjob()
 
         print('Job finished in {} seconds'.format(t.interval))
-        print('Shortest distance is {}'.format(shortest[-1]))
+        print('Shortest distance is {}'.format(result[1][-1]))
 
-        self._get_locations()
+        self.plot(result)
 
-        self.plot_route(idx)
-        plt.show(block=False)
-        self.plot_trend(shortest)
-        plt.show()
-
-    def _select_model(self):
+    def select_model(self):
         model_type = self.options.model_type 
 
         if model_type == "sequential":
-            self.model = SGA(self.options)
+            self.model = Models.SGA(self.options)
         elif model_type == "global":
-            self.model = GPGA(self.args)
+            self.model = Models.MRJobGlobal(self.args)
+            self.prepare_input_file()
         elif model_type == "island":
-            self.model = IPGA(self.args)
+            self.model = Models.MRJobIsland(self.args)
+            self.prepare_input_file()
+        elif model_type == "spark-g":
+            self.model = Models.SparkGlobal(self.args)
         else:
+            print(model_type)
             raise Exception("Model choices are: 'sequential', 'global' and 'island'")
+
+    def prepare_input_file(self):
+        num_lines = self.options.num_locations
+        if self.options.model_type == 'island':
+            num_lines = 4 # variable??
+
+        lines = np.arange(num_lines, dtype=int)
+        np.savetxt('data/input.txt', lines, fmt='%d')
+
+    def plot(self, result):
+        dna, history = result
+        self._get_locations()
+
+        self.plot_route(dna)
+        plt.show(block=False)
+        self.plot_trend(history)
+        plt.show()
+
+    def plot_route(self, dna):
+        # TODO title, legend osv.
+        loc = self.locations.T[:,dna]
+        dna = np.pad(dna, (0, 1), 'wrap')
+        plt.figure()
+        plt.scatter(*loc)
+        plt.plot(*loc)
+
+
+    def plot_trend(self, arr):
+        # TODO title, legend osv.
+        plt.figure()
+        plt.plot(arr)
+
 
     def _run_mrjob(self):
         with self.model.make_runner() as runner:
@@ -58,63 +93,63 @@ class GA():
 
             if self.options.model_type == "global":
                 distances = []
-                for idx, dist in self.model.parse_output(runner.cat_output()): 
+                for idx, dist in self.model.parse_output(runner.cat_output()):
                     distances.append(dist)
             else:
                 for idx, distances in self.model.parse_output(runner.cat_output()):
                     pass
-
-        return np.array(idx, dtype=int), np.array(distances)
+                
+        return 1, np.array([1,2,3])#np.array(idx, dtype=int), np.array(distances)
 
 
     def _run_sequential(self):
-        self.model.run()
-        return self.model.best, self.model.best_fitnesses
-
-    def plot_route(self, dna):
-        # TODO title, legend osv.
-        loc = self.locations.T
-        dna = np.pad(dna, (0, 1), 'wrap')
-        plt.figure()
-        plt.scatter(*loc)
-        plt.plot(*loc[:,dna])
-
-    def plot_trend(self, arr):
-        # TODO title, legend osv.
-        plt.figure()
-        plt.plot(arr)
+        return self.model.run()
 
     def _get_locations(self):
-        with open(self.options.locations, 'r') as f:
+        with open('data/locations.json', 'r') as f:
             self.locations = np.array(json.load(f))
        
-
     def _parseargs(self):
         parser = argparse.ArgumentParser()
 
         parser.add_argument('-t', '--model-type', default='sequential')
-        parser.add_argument('-d', '--locations', default='data/locations.json')
+        parser.add_argument('--no-plot')
 
         parser.add_argument('-p', '--population-size', default=10, type=int)
         parser.add_argument('-n', '--num-iterations', default=10, type=int)
         parser.add_argument('-l', '--num-locations', default=10, type=int)
+        parser.add_argument('-e', '--elite_fraction', default=0.2, type=float)
+        parser.add_argument('-m', '--mutation_rate', default=0.01, type=float)
 
         self.options, self.args = parser.parse_known_args()
+        self._add_passthru_args(self.args)
 
+    def _add_passthru_args(self, args=[]):
         # propagate to mrjob
-        self.args += ['--num-locations', str(self.options.num_locations)]
-        self.args += ['--num-iterations', str(self.options.num_iterations)]
-        self.args += ['--population-size', str(self.options.population_size)]
-        self.args += ['--locations', self.options.locations]
-        self.args.insert(0, "data/input.txt")
+        args += ['--num-locations', str(self.options.num_locations)]
+        args += ['--num-iterations', str(self.options.num_iterations)]
+        args += ['--population-size', str(self.options.population_size)]
+        args.insert(0, "data/input.txt")
+
+        self.args = args
 
 #%%
 if __name__ == '__main__':
-    ga = GA()
+    class options():
+        model_type = 'sequential'
+        num_iterations = 10
+        population_size = 100
+        num_locations = 100
+
+        mutation_rate = 0.01
+        elite_fraction = 0.1
+        num_migrations = 0.1
+
+    algorithm = Driver()
     # ga.options.num_locations = 100
     # ga.options.population_size = 100
     # ga.options.num_iterations = 1000
-    ga.run()
+    algorithm.run()
     # import os
     # print(os.getcwd())
 
