@@ -93,7 +93,7 @@ class GA():
         best = np.inf
         for i, idx in enumerate(population):
             # fitness = evalDistance(pop, self.distance_matrix)
-            fitness = self.fitness_func(self.locations[idx])
+            fitness = DNA.fitness_func(self.locations[idx])
             fitnesses[i] = 1/fitness
             total += fitnesses[i]
 

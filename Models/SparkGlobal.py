@@ -21,9 +21,11 @@ class SparkGlobal(MRJob, GA):
 
 
     def spark(self, input_path, output_path):
+        # import findspark
+        # findspark.init()
         import pyspark
 
-        sc = pyspark.SparkContext(appName ='TSP3')
+        sc = pyspark.SparkContext(appName ='TSPGlobal')
 
         self._get_locations_from_file('locations.json')
 

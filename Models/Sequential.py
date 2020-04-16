@@ -1,24 +1,25 @@
 #%%
-from Base import GA
+from Base import GA, DNA
 import numpy as np
 import json
 
 #%%
 class SGA(GA):
-    def __init__(self, options):
+    def __init__(self, options, locations=None):
         self.options = options
-        self.locations = None
-        print(options)
+        self.locations = locations
 
-    def run(self):
+    def run(self, population=None):
         num_iterations = self.options.num_iterations
         elite_size, num_parents = self._get_num_elites_and_parents()
         best_fitnesses = []
 
-        if self.locations == None:
+        if self.locations is None:
             self._get_locations_from_file('data/locations.json')
             
-        population = self._get_initial_population()
+        if population is None:
+            population = self._get_initial_population()
+            
         normalized_fitness, best_fitness = self._get_fitnesses(population)
         best_fitnesses.append(best_fitness)
 
@@ -33,7 +34,7 @@ class SGA(GA):
             couples = population[couple_idx]
             for i in range(num_parents):
                 # CROSSOVER AND MUTATION
-                new_population[i*2:(i+1)*2] = self.crossoverAndMutation(*couples[i])
+                new_population[i*2:(i+1)*2] = DNA.crossoverAndMutation(*couples[i], self.options.mutation_rate)
 
             # add elites
             best_idx = np.argsort(-normalized_fitness)[:elite_size]

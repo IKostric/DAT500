@@ -1,5 +1,5 @@
 from mrjob.job import MRJob, MRStep
-from Base import GA
+from Base import GA, DNA
 import numpy as np
 import json
 
@@ -20,7 +20,7 @@ class MRJobGlobal(MRJob, GA):
 
     def mapper_first(self, _, num):
         idx = np.random.permutation(self.options.num_locations)
-        distance = self.fitness_func(self.locations[idx])
+        distance = DNA.fitness_func(self.locations[idx])
         yield "route", (idx.tolist(), distance)
 
     def mapper(self, key, values):
@@ -31,13 +31,11 @@ class MRJobGlobal(MRJob, GA):
             yield "route", values
 
         if key == "couples":
-            child1, child2 = self.crossoverAndMutation(*values)
+            children = DNA.crossoverAndMutation(*values, self.options.mutation_rate)
 
-            distance = self.fitness_func(self.locations[child1])
-            yield "route", (child1.tolist(), distance)
-
-            distance = self.fitness_func(self.locations[child2])
-            yield "route", (child2.tolist(), distance)
+            for child in children:
+                distance = DNA.fitness_func(self.locations[child])
+                yield "route", (child.tolist(), distance)
 
 
     def reducer(self, key, values):
