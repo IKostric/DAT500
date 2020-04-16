@@ -85,7 +85,7 @@ class SparkGlobal(MRJob, GA):
             best_ids = np.argsort(distances)
             shortest.append(distances[best_ids[0]])
 
-        sc.parallelize(enumerate(shortest)).saveAsTextFile(output_path)
+        sc.parallelize([(i, population[best_ids[0]].tolist(), short) for i, short in enumerate(shortest)]).saveAsTextFile(output_path)
 
         sc.stop()
 

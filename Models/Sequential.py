@@ -8,8 +8,9 @@ class SGA(GA):
     def __init__(self, options, locations=None):
         self.options = options
         self.locations = locations
+        self.population = None
 
-    def run(self, population=None):
+    def run(self, population=None, island=False):
         num_iterations = self.options.num_iterations
         elite_size, num_parents = self._get_num_elites_and_parents()
         best_fitnesses = []
@@ -19,7 +20,9 @@ class SGA(GA):
             
         if population is None:
             population = self._get_initial_population()
-            
+        else:
+            population = np.array(population)
+
         normalized_fitness, best_fitness = self._get_fitnesses(population)
         best_fitnesses.append(best_fitness)
 
@@ -46,6 +49,9 @@ class SGA(GA):
             normalized_fitness, best_fitness = self._get_fitnesses(population)
             best_fitnesses.append(best_fitness)
 
+
+        if island:
+            return population[np.argsort(-normalized_fitness)]
 
         best_idx = np.argmax(normalized_fitness)
         return population[best_idx], best_fitnesses
