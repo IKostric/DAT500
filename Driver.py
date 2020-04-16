@@ -51,6 +51,8 @@ class Driver():
             self.prepare_input_file()
         elif model_type == "spark-g":
             self.model = Models.SparkGlobal(self.args)
+        elif model_type == "spark-i":
+            self.model = Models.SparkIsland(self.args)
         else:
             print(model_type)
             raise Exception("Model choices are: 'sequential', 'global' and 'island'")
@@ -101,8 +103,8 @@ class Driver():
             else:
                 distances = []
                 for res, empty in self.model.parse_output(runner.cat_output()):
-                    print(eval(res.rstrip()))
-                    distances.append(eval(res.rstrip()))
+                    print(res.rstrip())
+                    # distances.append(eval(res.rstrip()))
 
                 distances = sorted(distances, key=lambda t: t[0])
                 distances = [v for k,v in distances]

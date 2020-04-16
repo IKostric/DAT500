@@ -1,5 +1,5 @@
 from mrjob.job import MRJob, MRStep
-from Base import GA
+from Base import GA, DNA
 import numpy as np
 import json
 
@@ -17,7 +17,7 @@ class MRJobIsland(MRJob, GA):
 
         self.add_passthru_arg('--num-islands', default=4, type=int)
         self.add_passthru_arg('--num-migrations', default=2, type=int)
-        self.add_passthru_arg('--migrant_fraction', default=0.3, type=float)
+        self.add_passthru_arg('--migrant-fraction', default=0.3, type=float)
 
 
     def mapper_init(self):
@@ -51,7 +51,7 @@ class MRJobIsland(MRJob, GA):
             couples = population[couple_idx]
             for i in range(num_parents):
                 # CROSSOVER AND MUTATION
-                new_population[i*2:(i+1)*2] = self.crossoverAndMutation(*couples[i])
+                new_population[i*2:(i+1)*2] = DNA.crossoverAndMutation(*couples[i], self.options.mutation_rate)
 
             # add elites
             best_idx = np.argsort(-normalized_fitness)
