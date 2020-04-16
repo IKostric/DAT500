@@ -1,7 +1,7 @@
 import numpy as np
 import json
 
-class GA():
+class DNA():
     @staticmethod
     def fitness_func(dna):
         dist = np.roll(dna,-1, axis=0) - dna
@@ -13,13 +13,14 @@ class GA():
 
         return total_distance
 
-    def crossover(self, dna1, dna2):
+    @staticmethod
+    def crossover(dna1, dna2):
         # TODO try to get rid of this two lines
         # in spark
         dna1 = np.array(dna1)
         dna2 = np.array(dna2)
 
-        start, end = self._get_two_points(dna1)
+        start, end = DNA.get_two_points(len(dna1))
         
         section1, section2 = dna1[start:end], dna2[start:end]
         leftover1 = np.setdiff1d(dna2, section1, assume_unique=True)
@@ -37,27 +38,31 @@ class GA():
 
         return child1, child2
 
-    def mutation(self, dna):
-        mtrate = self.options.mutation_rate
-
-        if (mtrate != None) and (np.random.rand() < mtrate):
-            start, end = self._get_two_points(dna)
+    @staticmethod
+    def mutation(dna, mrate):
+        if (np.random.rand() < mrate):
+            start, end = DNA.get_two_points(dna)
             dna[start:end] = np.flip(dna[start:end])
         return dna
 
-    def crossoverAndMutation(self, dna1, dna2):
+    @staticmethod
+    def crossoverAndMutation(dna1, dna2, mrate=None):
         # CROSSOVER
-        child1, child2 = self.crossover(dna1, dna2)
+        child1, child2 = DNA.crossover(dna1, dna2)
 
         # MUTATION
-        child1 = self.mutation(child1)
-        child2 = self.mutation(child2)
+        if (mrate != None):
+            child1 = DNA.mutation(child1, mrate)
+            child2 = DNA.mutation(child2, mrate)
 
         return child1, child2
 
-    def _get_two_points(self, dna):
-        return np.sort(np.random.choice(len(dna), 2, replace=False))
+    @staticmethod
+    def get_two_points(length):
+        return np.sort(np.random.choice(length, 2, replace=False))
 
+
+class GA():
     def _get_num_elites_and_parents(self):
         pop_size = self.options.population_size
         elite_size = round(pop_size*self.options.elite_fraction*0.5) *2 # make sure it's even

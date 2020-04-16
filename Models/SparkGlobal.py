@@ -1,11 +1,14 @@
 from mrjob.job import MRJob, MRStep
-from Base import GA
+from mrjob.protocol import TextProtocol
+from Base import GA, DNA
 import numpy as np
 import json
 
 
 class SparkGlobal(MRJob, GA):
     FILES = ['../data/locations.json', '../Models/Base.py']
+
+    OUTPUT_PROTOCOL = TextProtocol
 
     def configure_args(self):
         super(SparkGlobal, self).configure_args()
@@ -19,18 +22,29 @@ class SparkGlobal(MRJob, GA):
 
     def spark(self, input_path, output_path):
         import pyspark
+
         sc = pyspark.SparkContext(appName ='TSP3')
 
         self._get_locations_from_file('locations.json')
 
-        # Avoid serialization of the entire object
+        # constants
+        num_iterations = self.options.num_iterations
+        mrate = self.options.mutation_rate
+        elite_size, num_parents = self._get_num_elites_and_parents()
+
+        # Broadcasts
+        ga = sc.broadcast(DNA)
         locations = sc.broadcast(self.locations)
-        fitness_func = self.fitness_func#.__func__
 
         # spark helper functions
         def get_distance(dna):
-            distance = fitness_func(locations.value[dna])
+            distance = ga.value.fitness_func(locations.value[dna])
             return dna, distance, 1/distance
+
+        def breed(couple):
+            children = ga.value.crossoverAndMutation(*couple, mrate)
+            for child in children:
+                yield child
 
         def unwrap_mat(dist):
             population, distances, fitness = dist.T
@@ -38,14 +52,11 @@ class SparkGlobal(MRJob, GA):
             fitness = fitness/np.sum(fitness)
             return population, distances, fitness
 
-        # constants
-        num_iterations = self.options.num_iterations
-        elite_size, num_parents = self._get_num_elites_and_parents()
         best_fitnesses = np.empty(num_iterations+1)
 
         # initialize populations
         initial_population = self._get_initial_population()
-        init_population = sc.parallelize(initial_population, 4)
+        init_population = sc.parallelize(initial_population)
 
         dist = np.array(init_population
                     .map(get_distance)
@@ -55,24 +66,26 @@ class SparkGlobal(MRJob, GA):
         best_ids = np.argsort(distances)
         shortest = [distances[best_ids[0]]]
 
-        # for _ in range(num_iterations):
+        for _ in range(num_iterations):
             
-        #     couple_idx = np.random.choice(population_size, \
-        #         size=(population_size-num_elites, 2), p=fitness.astype(np.float))
+            couple_idx = self._get_couple_idx(num_parents, fitness.astype(np.float))
 
-        #     elite = sc.parallelize(np.atleast_2d(population[best_ids[:num_elites]]), 4)
-        #     couples = sc.parallelize(population[couple_idx], 4)
-        #     children = couples\
-        #         .map(crossoverAndMutation)
+            elite = sc.parallelize(np.atleast_2d(population[best_ids[:elite_size]]))
+            couples = sc.parallelize(population[couple_idx])
+            children = couples\
+                .flatMap(breed)
+            new_population = children.union(elite)
+            dist = np.array(new_population
+                    .map(get_distance)
+                    .collect())
 
-        #     new_population = children.union(elite)
-        #     population, distances, fitness = getFitness(new_population)
-        #     best_ids = np.argsort(distances)
-        #     shortest.append(distances[best_ids[0]])
+            population, distances, fitness = unwrap_mat(dist)
+            best_ids = np.argsort(distances)
+            shortest.append(distances[best_ids[0]])
 
-        # dist.saveAsHadoopFile(output_path,
-        #                     'nicknack.MultipleValueOutputFormat')
+        sc.parallelize(enumerate(shortest)).saveAsTextFile(output_path)
 
         sc.stop()
 
-        return shortest
+if __name__ == '__main__':
+    SparkGlobal.run()

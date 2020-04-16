@@ -95,10 +95,19 @@ class Driver():
                 distances = []
                 for idx, dist in self.model.parse_output(runner.cat_output()):
                     distances.append(dist)
-            else:
+            elif self.options.model_type == "island":
                 for idx, distances in self.model.parse_output(runner.cat_output()):
-                    print("\n\n teset ", idx, distance)
                     pass
+            else:
+                distances = []
+                for res, empty in self.model.parse_output(runner.cat_output()):
+                    print(eval(res.rstrip()))
+                    distances.append(eval(res.rstrip()))
+
+                distances = sorted(distances, key=lambda t: t[0])
+                distances = [v for k,v in distances]
+                print(distances)
+                    # print("\n\n teset ", idx, dist.rstrip())
                 
         return 1, np.array([1,2,3])#np.array(idx, dtype=int), np.array(distances)
 
