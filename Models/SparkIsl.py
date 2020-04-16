@@ -1,62 +1,84 @@
+# from mrjob.job import MRJob, MRStep
+
+# from mrjob.protocol import TextProtocol
 #%%
-import os
-
-os.chdir("/home/ivica/DAT500/Models")
-# print(os.getcwd())
-
-os.environ['SPARK_HOME'] = '/home/ivica/spark-3.0.0-preview2-bin-hadoop3.2'
-
-#%%
+from Base import GA
+from Sequential import SGA
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import sys, random, json, datetime
+import json
 
-#%%
-from SGA import SGA
-
-# %%
-import findspark
-findspark.init()
-import pyspark
-
-sc = pyspark.SparkContext(appName ='TSP3')
-
-
-#%%
-sc.addPyFile('SGA.py')
-
-#%%
-def get_locations():
-    with open('../data/locations.json', 'r') as f:
-        locations = np.array(json.load(f))
-    
-    return locations
-
-
-#%%
-# CONST
 class options():
-    num_locations = 100
-    num_iterations = 100
-    population_size = 100
-    fraction_elites = 0.1
+    num_iterations = 10
+    population_size = 20
+    num_locations = 10
 
-#%%
-sga = SGA(options)
-sga.locations = get_locations()
+    mutation_rate = 0.01
+    elite_fraction = 0.1
 
-#%%
-start = datetime.datetime.now()
+    migrant_fraction = 0.3
+    num_migrations = 1
+    num_islands = 4
 
-workers = sc.parallelize([sga]*4, 4)
-workers.foreach(lambda x: x.run())
+class SparkIsland(GA):
+    FILES = ['../data/locations.json', '../Models/Base.py', '../Models/Sequential.py']
 
-print(datetime.datetime.now() - start)
+    # OUTPUT_PROTOCOL = TextProtocol
 
-# plt.plot(shortest)
-# %%
-sc.stop()
+    def __init__(self, options):
+        self.options = options
 
+
+    def spark(self):
+        # import findspark
+        # findspark.init()
+        import pyspark
+        sc = pyspark.SparkContext(appName="TSPIsland")
+        self._get_locations_from_file('locations.json')
+
+        #constants
+        num_islands = self.options.num_islands
+        locations = self.locations
+
+        number_of_migrants = int(((options.population_size*options.migrant_fraction)
+                                    /(num_islands-1))) # per island
+        tot_number_of_migrants = number_of_migrants * (num_islands-1)
+
+
+        workers = sc.parallelize(range(num_islands), num_islands).map(lambda x: (x, SGA(options, locations))).cache()
+        populations = [None]*num_islands
+        #  = workers.map(lambda ga: ga.run(island=True)).collect()
+        
+        print("\n\ntest\n\n")
+
+        for _ in range(self.options.num_migrations):
+            sorted_populations = np.array(workers
+                    .map(lambda ga: ga[1].run(population=populations[ga[0]], island=True))
+                    .collect())
+
+            populations = [[] for _ in range(num_islands)]
+            for island in range(num_islands):
+                island_pop = sorted_populations[island]
+                migrants = np.random.permutation(island_pop[:tot_number_of_migrants]).tolist()
+                rest = island_pop[tot_number_of_migrants:].tolist()
+                populations[island] += rest
+
+                for other in range(num_islands):
+                    if island != other:
+                        populations[other] += migrants[:number_of_migrants]
+                        migrants = migrants[number_of_migrants:]
+
+
+            # populations = workers.map(lambda ga: ga.population)
+        print(populations)
+        # output = workers.map(lambda ga: ga[1].run(population=populations[ga[0]], island=False))
+        # output.saveAsTextFile(output_path)
+        
+
+        sc.stop()
+
+if __name__ == '__main__':
+       
+    ga = SparkIsland(options)
+    ga.spark()
 
 # %%

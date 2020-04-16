@@ -37,15 +37,37 @@ class SparkIsland(MRJob, GA):
         options = self.options
         locations = self.locations
 
+        number_of_migrants = int(((options.population_size*options.migrant_fraction)
+                                    /(num_islands-1))) # per island
+        tot_number_of_migrants = number_of_migrants * (num_islands-1)
 
-        workers = sc.parallelize(range(num_islands), num_islands).map(lambda x: SGA(options, locations)).cache()
-        first_run = workers.map(lambda x: x.run())        
+
+        workers = sc.parallelize(range(num_islands), num_islands).map(lambda x: (x, SGA(options, locations))).cache()
+        populations = [None]*num_islands
+        #  = workers.map(lambda ga: ga.run(island=True)).collect()
 
         for _ in range(self.options.num_migrations):
-            continue
-            
+            sorted_populations = np.array(workers
+                    .map(lambda ga: ga[1].run(population=populations[ga[0]], island=True))
+                    .collect())
 
-        first_run.saveAsTextFile(output_path)
+            populations = [[] for _ in range(num_islands)]
+            for island in range(num_islands):
+                island_pop = sorted_populations[island]
+                migrants = np.random.permutation(island_pop[:tot_number_of_migrants]).tolist()
+                rest = island_pop[tot_number_of_migrants:].tolist()
+                populations[island] += rest
+
+                for other in range(num_islands):
+                    if island != other:
+                        populations[other] += migrants[:number_of_migrants]
+                        migrants = migrants[number_of_migrants:]
+
+            
+        last_run = (workers
+                    .map(lambda ga: ga[1].run(population=populations[ga[0]], island=False))
+                    .map(lambda row: (row[0].tolist(), row[1]))
+                    .saveAsTextFile(output_path))
 
         sc.stop()
 

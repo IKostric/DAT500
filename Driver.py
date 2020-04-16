@@ -97,21 +97,25 @@ class Driver():
                 distances = []
                 for idx, dist in self.model.parse_output(runner.cat_output()):
                     distances.append(dist)
-            elif self.options.model_type == "island":
-                for idx, distances in self.model.parse_output(runner.cat_output()):
-                    pass
-            else:
-                distances = []
-                for res, empty in self.model.parse_output(runner.cat_output()):
-                    print(res.rstrip())
-                    # distances.append(eval(res.rstrip()))
 
-                distances = sorted(distances, key=lambda t: t[0])
-                distances = [v for k,v in distances]
-                print(distances)
+            elif self.options.model_type == "island":
+                for idx, dist in self.model.parse_output(runner.cat_output()):
+                    distances = dist
+                    
+            elif self.options.model_type == "spark-i":
+                res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
+                res = sorted(res, key=lambda r: r[1][-1])
+                # res = list(zip(*map(list, res)))
+                idx, distances = res[0]
+                # print(idx, distances)
+            else:
+                res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
+                res = sorted(res, key=lambda t: t[0])
+                i, idx, distances = res[0]
+                print(idx, distances)
                     # print("\n\n teset ", idx, dist.rstrip())
                 
-        return 1, np.array([1,2,3])#np.array(idx, dtype=int), np.array(distances)
+        return np.array(idx, dtype=int), np.array(distances)
 
 
     def _run_sequential(self):

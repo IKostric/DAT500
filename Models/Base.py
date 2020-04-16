@@ -1,5 +1,5 @@
 import numpy as np
-import json
+import json, random
 
 class DNA():
     @staticmethod
@@ -78,6 +78,7 @@ class GA():
                     size=(num_parents, 2), p=normalized_fitness)
 
     def _get_initial_population(self):
+        np.random.seed(random.randint(0, 10000))
         num_locations = self.options.num_locations
         population_size = self.options.population_size
 
