@@ -6,7 +6,7 @@ import json
 
 
 class SparkGlobal(MRJob, GA):
-    FILES = ['../data/locations.json', '../Models/Base.py']
+    FILES = ['../Models/Base.py']
 
     OUTPUT_PROTOCOL = TextProtocol
 
@@ -16,8 +16,8 @@ class SparkGlobal(MRJob, GA):
         self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
         self.add_passthru_arg('-l', '--num-locations', default=10, type=int)
 
-        self.add_passthru_arg('-e', '--elite_fraction', default=0.1, type=float)
-        self.add_passthru_arg('-m', '--mutation_rate', default=0.01, type=float)
+        self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
+        self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
 
 
     def spark(self, input_path, output_path):
@@ -27,7 +27,7 @@ class SparkGlobal(MRJob, GA):
 
         sc = pyspark.SparkContext(appName ='TSPGlobal')
 
-        self._get_locations_from_file('locations.json')
+        self._get_locations_from_file('data/locations.json')
 
         # constants
         num_iterations = self.options.num_iterations

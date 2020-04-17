@@ -20,23 +20,33 @@ class Driver():
 
 
     def run(self):
+        num_repetitions = 3
+
         # init model
         if self.model == None:
             self.select_model()
         print("Running '{}' model.".format(self.options.model_type))
 
         with Timer() as t:
-            if self.options.model_type == "sequential":
-                # run sequential ga
-                result = self._run_sequential()
-            else:
-                # run parallel ga
-                result = self._run_mrjob()
+            for i in range(num_repetitions):
+                sh = []
 
-        print('Job finished in {} seconds'.format(t.interval))
-        print('Shortest distance is {}'.format(result[1][-1]))
+                if self.options.model_type == "sequential":
+                    # run sequential ga
+                    result = self._run_sequential()
+                else:
+                    # run parallel ga
+                    result = self._run_mrjob()
+                
+                sh.append(result[1][-1])
 
-        self.plot(result)
+        with open('results.txt', 'a+') as f:
+            print("Finished \n", self.options, file=f)
+            print('Job finished in {} seconds'.format(t.interval/num_repetitions), file=f)
+            print('Shortest distance is {}\n\n'.format(np.median(sh)), file=f)
+
+        if self.options.plot:
+            self.plot(result)
 
     def select_model(self):
         model_type = self.options.model_type 
@@ -49,9 +59,9 @@ class Driver():
         elif model_type == "island":
             self.model = Models.MRJobIsland(self.args)
             self.prepare_input_file()
-        elif model_type == "spark-g":
+        elif model_type == "global-s":
             self.model = Models.SparkGlobal(self.args)
-        elif model_type == "spark-i":
+        elif model_type == "island-s":
             self.model = Models.SparkIsland(self.args)
         else:
             print(model_type)
@@ -102,18 +112,20 @@ class Driver():
                 for idx, dist in self.model.parse_output(runner.cat_output()):
                     distances = dist
                     
-            elif self.options.model_type == "spark-i":
+            elif self.options.model_type == "island-s":
                 res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
                 res = sorted(res, key=lambda r: r[1][-1])
                 # res = list(zip(*map(list, res)))
                 idx, distances = res[0]
-                # print(idx, distances)
-            else:
+                
+            elif self.options.model_type == "global-s":
                 res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
                 res = sorted(res, key=lambda t: t[0])
-                i, idx, distances = res[0]
-                print(idx, distances)
-                    # print("\n\n teset ", idx, dist.rstrip())
+                i, idx, dist = res[0]
+                distances = [dist]
+
+            else:
+                return None, [0]
                 
         return np.array(idx, dtype=int), np.array(distances)
 
@@ -129,13 +141,13 @@ class Driver():
         parser = argparse.ArgumentParser()
 
         parser.add_argument('-t', '--model-type', default='sequential')
-        parser.add_argument('--no-plot')
+        parser.add_argument('--plot', action='store_true')
 
         parser.add_argument('-p', '--population-size', default=10, type=int)
         parser.add_argument('-n', '--num-iterations', default=10, type=int)
         parser.add_argument('-l', '--num-locations', default=10, type=int)
-        parser.add_argument('-e', '--elite_fraction', default=0.2, type=float)
-        parser.add_argument('-m', '--mutation_rate', default=0.01, type=float)
+        parser.add_argument('-e', '--elite-fraction', default=0.2, type=float)
+        parser.add_argument('-m', '--mutation-rate', default=0.01, type=float)
 
         self.options, self.args = parser.parse_known_args()
         self._add_passthru_args(self.args)
@@ -145,6 +157,8 @@ class Driver():
         args += ['--num-locations', str(self.options.num_locations)]
         args += ['--num-iterations', str(self.options.num_iterations)]
         args += ['--population-size', str(self.options.population_size)]
+        args += ['--elite-fraction', str(self.options.elite_fraction)]
+        args += ['--mutation-rate', str(self.options.mutation_rate)]
         args.insert(0, "data/input.txt")
 
         self.args = args

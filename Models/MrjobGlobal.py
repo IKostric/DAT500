@@ -12,8 +12,8 @@ class MRJobGlobal(MRJob, GA):
         self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
         self.add_passthru_arg('-l', '--num-locations', default=10, type=int)
 
-        self.add_passthru_arg('-e', '--elite_fraction', default=0.1, type=float)
-        self.add_passthru_arg('-m', '--mutation_rate', default=0.01, type=float)
+        self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
+        self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
 
     def mapper_init(self):
         self._get_locations_from_file('locations.json')
