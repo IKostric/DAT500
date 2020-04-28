@@ -1,4 +1,8 @@
 .vscode
 **/*.pyc
 
-input.txt
+data/**
+
+results.txt
+run_script.sh
+

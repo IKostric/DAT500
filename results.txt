@@ -143,3 +143,40 @@ Shortest distance is 318.6462686782801
 
 
 INCREASE IN VOLUME
+Finished 
+ Namespace(elite_fraction=0.1, model_type='sequential', mutation_rate=0.01, num_iterations=1000, num_locations=1000, plot=False, population_size=1000)
+Job finished in 301.31852380434674 seconds
+Shortest distance is 318.460636161868
+
+
+Finished 
+ Namespace(elite_fraction=0.2, model_type='global-s', mutation_rate=0.01, num_iterations=1000, num_locations=1000, plot=False, population_size=1000)
+Job finished in 542.8429911931356 seconds
+Shortest distance is 501.58008614485584
+
+
+INCREASE IN VOLUME
+Finished 
+ Namespace(elite_fraction=0.1, model_type='sequential', mutation_rate=0.01, num_iterations=10000, num_locations=10000, plot=False, population_size=10000)
+Job finished in 205788.73325061798 seconds
+Shortest distance is 3082.04567722316
+
+
+Finished 
+ Namespace(elite_fraction=0.2, model_type='sequential', mutation_rate=0.01, num_iterations=10, num_locations=10, plot=False, population_size=10)
+Job finished in 0.09198745091756184 seconds
+Shortest distance is 4.215029626589403
+
+
+Finished 
+ Namespace(elite_fraction=0.2, model_type='sequential', mutation_rate=0.01, num_iterations=1000, num_locations=2000, plot=False, population_size=1000)
+Job finished in 424.40244181950885 seconds
+Shortest distance is 695.5537233903137
+
+
+Finished 
+ Namespace(elite_fraction=0.2, model_type='sequential', mutation_rate=0.01, num_iterations=1000, num_locations=5000, plot=False, population_size=1000)
+Job finished in 901.5390555063883 seconds
+Shortest distance is 2020.6281289423157
+
+

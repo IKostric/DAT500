@@ -7,7 +7,6 @@ import json
 
 class SparkGlobal(MRJob, GA):
     FILES = ['../Models/Base.py']
-
     OUTPUT_PROTOCOL = TextProtocol
 
     def configure_args(self):
@@ -24,6 +23,9 @@ class SparkGlobal(MRJob, GA):
         # import findspark
         # findspark.init()
         import pyspark
+        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '3g')
+        pyspark.SparkContext.setSystemProperty('spark.driver.cores', '2')
+        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '7g')
 
         sc = pyspark.SparkContext(appName ='TSPGlobal')
 

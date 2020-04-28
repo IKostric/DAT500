@@ -79,6 +79,7 @@ class GA():
 
     def _get_initial_population(self):
         np.random.seed(random.randint(0, 10000))
+        
         num_locations = self.options.num_locations
         population_size = self.options.population_size
 

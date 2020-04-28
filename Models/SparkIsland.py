@@ -29,6 +29,9 @@ class SparkIsland(MRJob, GA):
         # import findspark
         # findspark.init()
         import pyspark
+        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '3g')
+        pyspark.SparkContext.setSystemProperty('spark.driver.cores', '2')
+        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '7g')
         sc = pyspark.SparkContext(appName="TSPIsland")
         self._get_locations_from_file('data/locations.json')
 

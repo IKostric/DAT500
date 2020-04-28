@@ -141,7 +141,7 @@
 
 echo "INCREASE IN VOLUME" >> results.txt
 
-for i in 1000 10000
+for i in 10000
 do
     python Driver.py -t sequential \
         -n $i -p $i -l $i \
@@ -151,10 +151,7 @@ do
     python Driver.py -t global-s -r spark --spark-master yarn \
         -n $i -p $i -l $i \
         --elite-fraction 0.1 \
-        --mutation-rate 0.01 \
-        --executor-memory 3G \
-        --driver-memory 7G \
-        --driver-cores 2
+        --mutation-rate 0.01 
 done
 
 array3=(10 100 1000 5000)
@@ -169,9 +166,6 @@ for index in ${!array[*]}; do
         --num-islands 4 \
         --num-migrations 9 \
         --migrant-fraction 0.4
-        --executor-memory 3G \
-        --driver-memory 7G \
-        --driver-cores 2
 done
 
 for i in 50000
@@ -184,8 +178,5 @@ do
     python Driver.py -t global-s -r spark --spark-master yarn \
         -n $i -p $i -l $i \
         --elite-fraction 0.1 \
-        --mutation-rate 0.01 \
-        --executor-memory 3G \
-        --driver-memory 7G \
-        --driver-cores 2
+        --mutation-rate 0.01 
 done
