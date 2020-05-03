@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from Timer import Timer
 import Models
 
-#%%
 class Driver():
     def __init__(self, options=None):
         if options == None:
@@ -27,9 +26,12 @@ class Driver():
             self.select_model()
         print("Running '{}' model.".format(self.options.model_type))
 
-        with Timer() as t:
-            for i in range(num_repetitions):
-                sh = []
+        sh = []
+        plot_res = []
+        times = []
+        
+        for i in range(num_repetitions):
+            with Timer() as t:
 
                 if self.options.model_type == "sequential":
                     # run sequential ga
@@ -39,14 +41,20 @@ class Driver():
                     result = self._run_mrjob()
                 
                 sh.append(result[1][-1])
+                plot_res.append(result[1])
+            times.append(t.interval)
 
-        with open('results.txt', 'a+') as f:
-            print("Finished \n", self.options, file=f)
-            print('Job finished in {} seconds'.format(t.interval/num_repetitions), file=f)
-            print('Shortest distance is {}\n\n'.format(np.median(sh)), file=f)
+        plot_res = np.array(plot_res)
+        # print(np.mean(plot_res, axis=0).tolist())
+        with open('paths.txt', 'a+') as f:
+            print(np.mean(plot_res, axis=0).tolist(), file=f)
 
-        if self.options.plot:
-            self.plot(result)
+        print(np.mean(times), np.std(times))
+        print(sh, '\n')
+        # if self.options.plot:
+        #     self.plot(result)
+        
+        print(np.mean(sh), np.std(sh))
 
     def select_model(self):
         model_type = self.options.model_type 
@@ -57,6 +65,8 @@ class Driver():
             self.model = Models.MRJobGlobal(self.args)
             self.prepare_input_file()
         elif model_type == "island":
+            self.args += ['--num-migrations', str(self.options.num_migrations)]
+            self.args += ['--num-islands', str(self.options.num_islands)]
             self.model = Models.MRJobIsland(self.args)
             self.prepare_input_file()
         elif model_type == "global-s":
@@ -68,9 +78,9 @@ class Driver():
             raise Exception("Model choices are: 'sequential', 'global' and 'island'")
 
     def prepare_input_file(self):
-        num_lines = self.options.num_locations
+        num_lines = self.options.population_size
         if self.options.model_type == 'island':
-            num_lines = 4 # variable??
+            num_lines = self.options.num_islands 
 
         lines = np.arange(num_lines, dtype=int)
         np.savetxt('data/input.txt', lines, fmt='%d')
@@ -86,8 +96,8 @@ class Driver():
 
     def plot_route(self, dna):
         # TODO title, legend osv.
-        loc = self.locations.T[:,dna]
         dna = np.pad(dna, (0, 1), 'wrap')
+        loc = self.locations.T[:,dna]
         plt.figure()
         plt.scatter(*loc)
         plt.plot(*loc)
@@ -149,6 +159,9 @@ class Driver():
         parser.add_argument('-e', '--elite-fraction', default=0.2, type=float)
         parser.add_argument('-m', '--mutation-rate', default=0.01, type=float)
 
+        parser.add_argument('--num-islands', default=3, type=int)
+        parser.add_argument('--num-migrations', default=4, type=int)
+
         self.options, self.args = parser.parse_known_args()
         self._add_passthru_args(self.args)
 
@@ -163,19 +176,22 @@ class Driver():
 
         self.args = args
 
-#%%
+
 if __name__ == '__main__':
     class options():
-        model_type = 'sequential'
-        num_iterations = 10
-        population_size = 100
-        num_locations = 100
+        model_type = 'global'
+        num_iterations = 1000
+        population_size = 900
+        num_locations = 1000
+
+        num_islands = 6
+        num_migrations = 4
 
         mutation_rate = 0.01
-        elite_fraction = 0.1
-        num_migrations = 0.1
+        elite_fraction = 0.2
+        plot = True
 
-    algorithm = Driver()
+    algorithm = Driver(options)
     # ga.options.num_locations = 100
     # ga.options.population_size = 100
     # ga.options.num_iterations = 1000

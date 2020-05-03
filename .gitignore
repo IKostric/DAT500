@@ -2,7 +2,4 @@
 **/*.pyc
 
 data/**
-
-results.txt
-run_script.sh
-
+extras

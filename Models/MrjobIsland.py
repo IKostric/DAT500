@@ -16,8 +16,8 @@ class MRJobIsland(MRJob, GA):
         self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
         self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
 
-        self.add_passthru_arg('--num-islands', default=4, type=int)
-        self.add_passthru_arg('--num-migrations', default=2, type=int)
+        self.add_passthru_arg('--num-islands', default=3, type=int)
+        self.add_passthru_arg('--num-migrations', default=1, type=int)
         self.add_passthru_arg('--migrant-fraction', default=0.3, type=float)
 
 
