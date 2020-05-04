@@ -1,6 +1,9 @@
 # python==3.8
-mrjob==0.7.2
+findspark==1.3.0
 matplotlib==3.1.3
+mrjob==0.7.2
 numpy==1.18.1
 pandas==1.0.3
+py4j==0.10.7
+pyparsing==2.4.7
 pyspark==2.4.5

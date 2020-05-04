@@ -1,6 +1,9 @@
 import time
 
-class Timer:    
+class Timer:   
+    """ Helper class for timing models.
+    """ 
+
     def __enter__(self):
         self.start = time.time()
         return self

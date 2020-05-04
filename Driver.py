@@ -6,9 +6,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Timer import Timer
-import Models, math
+import Models, json
 
 class Driver():
+    """ Entry point for all genetic algorithms.
+
+        usage: 
+        $ python Driver.py -t <model type> <options>
+    """
     def __init__(self, options=None):
         if options == None:
             self._parseargs()
@@ -18,8 +23,12 @@ class Driver():
         self.model = None
 
 
-    def run(self):
-        num_repetitions = 3
+    def run(self, num_repetitions=1):
+        """ Run selected model. Print average timings and results.
+
+        Keyword Arguments:
+            num_repetitions {int} -- Number of times to repeat the experiment (default: {1})
+        """
 
         # init model
         if self.model == None:
@@ -59,6 +68,11 @@ class Driver():
         
 
     def select_model(self):
+        """ Select appropriate model given '-t' parameter.
+
+        Raises:
+            Exception: Non existent model.
+        """
         model_type = self.options.model_type 
 
         if model_type == "sequential":
@@ -77,9 +91,16 @@ class Driver():
             self.model = Models.SparkIsland(self.args)
         else:
             print(model_type)
-            raise Exception("Model choices are: 'sequential', 'global' and 'island'")
+            raise Exception("Model choices are: 'sequential', 'global', 'island', 'global-s', 'island-s'")
 
     def prepare_input_file(self):
+        """ Helper method for MapReduce. Creates input file called 'input.txt'.
+            If model is global, number of lines is equal to population size, that
+            way every mapper gets one individual from the population.
+
+            If model is island, number of lines is equal to number of islands. In
+            this case number of mappers is equal to number of islands.
+        """
         num_lines = self.options.population_size
         if self.options.model_type == 'island':
             num_lines = self.options.num_islands 
@@ -88,30 +109,59 @@ class Driver():
         np.savetxt('data/input.txt', lines, fmt='%d')
 
     def plot(self, result):
+        """ Helper method for plotting.
+
+        Arguments:
+            result {tuple} -- First element is the best individual, second is the 
+                                list of shortest paths in every iteration
+        """
         dna, history = result
         self._get_locations()
 
-        self.plot_route(dna)
-        plt.show(block=False)
+        # plot route
+        if self.locations.size == 2:
+            self.plot_route(dna)
+            plt.show(block=False)
+
+        # plot convergence
         self.plot_trend(history)
         plt.show()
 
     def plot_route(self, dna):
-        # TODO title, legend osv.
+        """ Helper method for plotting route.
+
+        Arguments:
+            dna {list} -- list of indices, order in which to travel between locations. 
+        """
         dna = np.pad(dna, (0, 1), 'wrap')
         loc = self.locations.T[:,dna]
         plt.figure()
         plt.scatter(*loc)
         plt.plot(*loc)
+        plt.title("Best route path after {} iterations".format(self.options.num_iterations))
+        plt.xlabel("x")
+        plt.ylabel("y")
 
 
     def plot_trend(self, arr):
-        # TODO title, legend osv.
+        """ Helper method for plotting convergence.
+
+        Arguments:
+            arr {list} -- list of shortest routes after every iteration.
+        """
         plt.figure()
         plt.plot(arr)
+        plt.title("Convergence rate")
+        plt.xlabel("Number of iterations")
+        plt.ylabel("Distance")
 
 
     def _run_mrjob(self):
+        """ Run MrJob programmaticaly and parse result based on the model.
+
+        Returns:
+            [tuple] -- tuple containing best individual and shortest path at every iteration.
+        """
         with self.model.make_runner() as runner:
             runner.run()
 
@@ -148,13 +198,25 @@ class Driver():
 
 
     def _run_sequential(self):
+        """ Run SGA, this is done localy so we don't need MrJob.
+
+        Returns:
+            [tuple] -- tuple containing best individual and shortest path at every iteration.
+        """
         return self.model.run()
 
     def _get_locations(self):
+        """ Load locations. This is mostly used for plotting. Models load their own instances 
+            of locations.
+
+            locations is a list of locations with dimensions (num_locations x dimension)
+        """
         with open('data/locations.json', 'r') as f:
             self.locations = np.array(json.load(f))
        
     def _parseargs(self):
+        """ Parse arguments from command line.
+        """
         parser = argparse.ArgumentParser()
 
         parser.add_argument('-t', '--model-type', default='sequential')
@@ -173,6 +235,12 @@ class Driver():
         self._add_passthru_args(self.args)
 
     def _add_passthru_args(self, args=[]):
+        """ Add passthrough arguments. This is requred for MapReduce passthourgh args.
+
+
+        Keyword Arguments:
+            args {list} -- Already set arguments (default: {[]})
+        """
         # propagate to mrjob
         args += ['--num-locations', str(self.options.num_locations)]
         args += ['--num-iterations', str(self.options.num_iterations)]
@@ -185,26 +253,25 @@ class Driver():
 
 
 if __name__ == '__main__':
-    class options():
-        model_type = 'global'
-        num_iterations = 1000
-        population_size = 900
-        num_locations = 1000
+    """ Run the algorithm.
+    """
+    # Uncomment options class to speccify the options here instead of command line.
+    # class options():
+    #     model_type = 'global'
+    #     num_iterations = 1000
+    #     population_size = 900
+    #     num_locations = 1000
 
-        num_islands = 6
-        num_migrations = 4
+    #     num_islands = 6
+    #     num_migrations = 4
 
-        mutation_rate = 0.01
-        elite_fraction = 0.2
-        plot = True
+    #     mutation_rate = 0.01
+    #     elite_fraction = 0.2
 
-    algorithm = Driver(options)
-    # ga.options.num_locations = 100
-    # ga.options.population_size = 100
-    # ga.options.num_iterations = 1000
+    if "options" in locals():
+        algorithm = Driver(options)
+    else:
+        algorithm = Driver()
     algorithm.run()
-    # import os
-    # print(os.getcwd())
 
 
-# %%
