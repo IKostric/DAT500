@@ -82,7 +82,7 @@ Will run sequential GA with number of iterations = 500, population size 120 and 
 python Driver.py -t global-s --spark-master yarn  \
      -n 500 -p 120 -l 30
 ```
-Will run global parallel model in Hadoop cluster with Spark. The model has the same parameters as above.
+Will run global parallel model in Hadoop cluster with Spark. The model has the same parameters as the one above.
 
 
 ``` shell
