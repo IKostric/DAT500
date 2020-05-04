@@ -15,7 +15,7 @@ class SparkGlobal(MRJob, GA):
         self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
         self.add_passthru_arg('-l', '--num-locations', default=10, type=int)
 
-        self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
+        self.add_passthru_arg('-e', '--elite-fraction', default=0.2, type=float)
         self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
 
 
@@ -23,9 +23,10 @@ class SparkGlobal(MRJob, GA):
         # import findspark
         # findspark.init()
         import pyspark
-        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '3g')
-        pyspark.SparkContext.setSystemProperty('spark.driver.cores', '2')
-        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '7g')
+        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '4g')
+        pyspark.SparkContext.setSystemProperty('spark.executor.instances', '3')
+        pyspark.SparkContext.setSystemProperty('spark.executor.cores', '1')
+        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '6g')
 
         sc = pyspark.SparkContext(appName ='TSPGlobal')
 
@@ -87,7 +88,8 @@ class SparkGlobal(MRJob, GA):
             best_ids = np.argsort(distances)
             shortest.append(distances[best_ids[0]])
 
-        sc.parallelize([(i, population[best_ids[0]].tolist(), short) for i, short in enumerate(shortest)]).saveAsTextFile(output_path)
+        # sc.parallelize([(i, population[best_ids[0]].tolist(), short) for i, short in enumerate(shortest)]).saveAsTextFile(output_path)
+        sc.parallelize(enumerate(shortest)).saveAsTextFile(output_path)
 
         sc.stop()
 

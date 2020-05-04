@@ -49,7 +49,7 @@ class SGA(GA):
             normalized_fitness, best_fitness = self._get_fitnesses(population)
             best_fitnesses.append(best_fitness)
 
-
+        
         if island:
             return population[np.argsort(-normalized_fitness)]
 

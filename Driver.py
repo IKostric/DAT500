@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Timer import Timer
-import Models
+import Models, math
 
 #%%
 class Driver():
@@ -27,23 +27,28 @@ class Driver():
             self.select_model()
         print("Running '{}' model.".format(self.options.model_type))
 
-        with Timer() as t:
-            for i in range(num_repetitions):
-                sh = []
-
+        
+        sh = []
+        times = []
+        for i in range(num_repetitions):
+            with Timer() as t:
                 if self.options.model_type == "sequential":
                     # run sequential ga
                     result = self._run_sequential()
                 else:
                     # run parallel ga
                     result = self._run_mrjob()
-                
-                sh.append(result[1][-1])
+            
+            sh.append(result[1][-1])
+            times.append(t.interval)
 
         with open('results.txt', 'a+') as f:
             print("Finished \n", self.options, file=f)
-            print('Job finished in {} seconds'.format(t.interval/num_repetitions), file=f)
-            print('Shortest distance is {}\n\n'.format(np.median(sh)), file=f)
+            print('Job finished in {} +- {} seconds'.format(np.mean(times), np.std(times)), file=f)
+            print('Shortest distance is {} +- {}'.format(np.mean(sh), np.std(sh)), file=f)#min(sh, key=lambda x: x[-1])[-1]), file=f)
+            print('times: ', times, file=f)
+            # print('All best fitnesses: ', sh, file=f)
+            print('\n', file=f)
 
         if self.options.plot:
             self.plot(result)
@@ -68,9 +73,9 @@ class Driver():
             raise Exception("Model choices are: 'sequential', 'global' and 'island'")
 
     def prepare_input_file(self):
-        num_lines = self.options.num_locations
+        num_lines = self.options.population_size
         if self.options.model_type == 'island':
-            num_lines = 4 # variable??
+            num_lines = 3 # variable??
 
         lines = np.arange(num_lines, dtype=int)
         np.savetxt('data/input.txt', lines, fmt='%d')
@@ -105,8 +110,13 @@ class Driver():
 
             if self.options.model_type == "global":
                 distances = []
-                for idx, dist in self.model.parse_output(runner.cat_output()):
-                    distances.append(dist)
+                counter = -1
+                for key, value in self.model.parse_output(runner.cat_output()):
+                    iter_num, idxs, dist = value
+                    if iter_num > counter:
+                        counter = iter_num
+                        distances.append(dist)
+                        idx = idxs
 
             elif self.options.model_type == "island":
                 for idx, dist in self.model.parse_output(runner.cat_output()):
@@ -121,8 +131,8 @@ class Driver():
             elif self.options.model_type == "global-s":
                 res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
                 res = sorted(res, key=lambda t: t[0])
-                i, idx, dist = res[0]
-                distances = [dist]
+                distances = [res[-1][1]]
+                idx = [1,2,3]
 
             else:
                 return None, [0]

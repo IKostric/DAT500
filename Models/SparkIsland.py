@@ -20,7 +20,7 @@ class SparkIsland(MRJob, GA):
         self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
         self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
 
-        self.add_passthru_arg('--num-islands', default=4, type=int)
+        self.add_passthru_arg('--num-islands', default=3, type=int)
         self.add_passthru_arg('--num-migrations', default=2, type=int)
         self.add_passthru_arg('--migrant-fraction', default=0.3, type=float)
 
@@ -29,9 +29,12 @@ class SparkIsland(MRJob, GA):
         # import findspark
         # findspark.init()
         import pyspark
-        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '3g')
-        pyspark.SparkContext.setSystemProperty('spark.driver.cores', '2')
-        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '7g')
+        # pyspark.SparkContext.setSystemProperty('spark.yarn.am.cores', '1')
+        # pyspark.SparkContext.setSystemProperty('spark.yarn.am.memory', '1g')
+        pyspark.SparkContext.setSystemProperty('spark.driver.memory', '4g')
+        pyspark.SparkContext.setSystemProperty('spark.executor.instances', '3')
+        pyspark.SparkContext.setSystemProperty('spark.executor.cores', '2')
+        pyspark.SparkContext.setSystemProperty('spark.executor.memory', '6g')
         sc = pyspark.SparkContext(appName="TSPIsland")
         self._get_locations_from_file('data/locations.json')
 
