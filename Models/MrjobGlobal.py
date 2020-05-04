@@ -8,12 +8,12 @@ class MRJobGlobal(MRJob, GA):
 
     def configure_args(self):
         super(MRJobGlobal, self).configure_args()
-        self.add_passthru_arg('-p', '--population-size', default=10, type=int)
-        self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
-        self.add_passthru_arg('-l', '--num-locations', default=10, type=int)
+        self.add_passthru_arg('-p', '--population-size', type=int)
+        self.add_passthru_arg('-n', '--num-iterations', type=int)
+        self.add_passthru_arg('-l', '--num-locations', type=int)
 
-        self.add_passthru_arg('-e', '--elite-fraction', default=0.1, type=float)
-        self.add_passthru_arg('-m', '--mutation-rate', default=0.01, type=float)
+        self.add_passthru_arg('-e', '--elite-fraction', type=float)
+        self.add_passthru_arg('-m', '--mutation-rate', type=float)
 
 
     def mapper_init(self):
@@ -49,7 +49,6 @@ class MRJobGlobal(MRJob, GA):
             elite_size, num_parents = self._get_num_elites_and_parents()
             idx, distances = list(zip(*map(list, values)))
 
-
             if elite_size > 0:
                 best_idxs = np.argsort(distances)[:elite_size]
                 best_idx = best_idxs[0]
@@ -69,7 +68,7 @@ class MRJobGlobal(MRJob, GA):
                 
                 # SELECTION
                 couple_idx = self._get_couple_idx(num_parents, fitness/np.sum(fitness))
-            
+                
                 for couple in idx[couple_idx]:
                     yield "couples", couple.tolist()
             
