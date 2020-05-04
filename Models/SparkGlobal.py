@@ -155,7 +155,7 @@ class SparkGlobal(MRJob, GA):
             shortest.append(distances[best_ids[0]])
 
         # save to file
-        sc.parallelize([(i, population[best_ids[0]].tolist(), short) for i, short in enumerate(shortest)])\
+        sc.parallelize([population[best_ids[0]].tolist(), shortest])\
             .saveAsTextFile(output_path)
         sc.stop()
 

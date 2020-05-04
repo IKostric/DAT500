@@ -50,21 +50,15 @@ class Driver():
             sh.append(result[1][-1])
             times.append(t.interval)
 
-        with open('results.txt', 'a+') as f:
-            print("Finished \n", self.options, file=f)
-            print('Job finished in {} +- {} seconds'.format(np.mean(times), np.std(times)), file=f)
-            print('Shortest distance is {} +- {}'.format(np.mean(sh), np.std(sh)), file=f)#min(sh, key=lambda x: x[-1])[-1]), file=f)
-            print('times: ', times, file=f)
-            # print('All best fitnesses: ', sh, file=f)
-            print('\n', file=f)
-
-        print(np.mean(times), np.std(times))
-        print(sh, '\n')
-        print(np.mean(sh), np.std(sh))
-
+        print("Finished \n", self.options)
+        print('Job finished in {} +- {} seconds'.format(np.mean(times), np.std(times)))
+        print('Shortest distance is {} +- {}'.format(np.mean(sh), np.std(sh)))
+        print('times: ', times)
+        print('\n')
         
-        # if self.options.plot:
-        #     self.plot(result)
+        # plot if option set
+        if self.options.plot:
+            self.plot(result)
         
 
     def select_model(self):
@@ -186,10 +180,10 @@ class Driver():
                 idx, distances = res[0]
                 
             elif self.options.model_type == "global-s":
-                res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
-                res = sorted(res, key=lambda t: t[0])
-                distances = [res[-1][1]]
-                idx = [1,2,3]
+                res = next(runner.cat_output())
+                idx = json.loads(res.rstrip())
+                res = next(runner.cat_output())
+                distances = json.loads(res.rstrip())
 
             else:
                 return None, [0]
