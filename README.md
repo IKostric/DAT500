@@ -66,7 +66,38 @@ python locations.py <number-of-locations> <dimensions>
 Running the code from command line has the form:
 
 ``` shell
-python Driver.py -t <model type> <options>
+python Driver.py <options>
+```
+
+Possible options in addition to mrjob options are:
+``` shell
+-t TYPE, --model-type TYPE, 
+                choices: 'sequential', 'global', 'island', 'global-s', 'island-s'
+                default: 'sequential'
+
+-p POP_SIZE, --population-size POP_SIZE
+                Size of population. If island mode is chosen then it is size per island.
+-n ITERATIONS, --num-iterations ITERATIONS
+                Number of iterations for algorithm to run. If island mode, then it is
+                number of iterations between every migration.
+-l NUM_LOCATIONS, --num-locations NUM_LOCATIONS
+                How many locations to use for the algorithm. It should be at least this many locations in location.json file.
+-e FRACTION_ELITES, --elite-fraction FRACTION_ELITES
+                Fraction of population that is propagated to the next generation without change (mutation).
+-m MUTATION_RATE, --mutation-rate MUTATION_RATE
+                Probability of mutating a section of the path for an individual.
+
+--plot          Whether to plot the graphs (route and convergence)
+```
+
+Following are options only available in island models.
+``` shell
+--num-islands NUM_ISLANDS
+                Hom many islands to use.
+--num-migrations NUM_MIGRATIONS
+                How many migrations between islands.
+--migrant-fraction FRACTION_MIGRANTS
+                Fraction of subpopulation to migrate from each island. The best individuals are chosen to be migrated.
 ```
 
 Some examples:
@@ -79,7 +110,7 @@ Will run sequential GA with number of iterations = 500, population size 120 and 
 
 
 ``` shell
-python Driver.py -t global-s --spark-master yarn  \
+python Driver.py -t global-s -r spark --spark-master yarn  \
      -n 500 -p 120 -l 30
 ```
 Will run global parallel model in Hadoop cluster with Spark. The model has the same parameters as the one above.

@@ -50,11 +50,9 @@ class Driver():
             sh.append(result[1][-1])
             times.append(t.interval)
 
-        print("Finished \n", self.options)
+        print("\nFinished \n", self.options)
         print('Job finished in {} +- {} seconds'.format(np.mean(times), np.std(times)))
-        print('Shortest distance is {} +- {}'.format(np.mean(sh), np.std(sh)))
-        print('times: ', times)
-        print('\n')
+        print('Shortest distance is {} +- {}\n'.format(np.mean(sh), np.std(sh)))
         
         # plot if option set
         if self.options.plot:
@@ -82,6 +80,8 @@ class Driver():
         elif model_type == "global-s":
             self.model = Models.SparkGlobal(self.args)
         elif model_type == "island-s":
+            self.args += ['--num-migrations', str(self.options.num_migrations)]
+            self.args += ['--num-islands', str(self.options.num_islands)]
             self.model = Models.SparkIsland(self.args)
         else:
             print(model_type)
@@ -174,16 +174,13 @@ class Driver():
                     distances = dist
                     
             elif self.options.model_type == "island-s":
-                res = [eval(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
+                res = [json.loads(res.rstrip()) for res,empty in self.model.parse_output(runner.cat_output())]
                 res = sorted(res, key=lambda r: r[1][-1])
                 # res = list(zip(*map(list, res)))
                 idx, distances = res[0]
                 
             elif self.options.model_type == "global-s":
-                res = next(runner.cat_output())
-                idx = json.loads(res.rstrip())
-                res = next(runner.cat_output())
-                distances = json.loads(res.rstrip())
+                idx, distances = [json.loads(res.rstrip()) for res, empty in self.model.parse_output(runner.cat_output())]
 
             else:
                 return None, [0]
@@ -223,7 +220,7 @@ class Driver():
         parser.add_argument('-m', '--mutation-rate', default=0.01, type=float)
 
         parser.add_argument('--num-islands', default=3, type=int)
-        parser.add_argument('--num-migrations', default=4, type=int)
+        parser.add_argument('--num-migrations', default=1, type=int)
 
         self.options, self.args = parser.parse_known_args()
         self._add_passthru_args(self.args)

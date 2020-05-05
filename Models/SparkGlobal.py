@@ -2,7 +2,6 @@ from mrjob.job import MRJob, MRStep
 from mrjob.protocol import TextProtocol
 from Base import GA, DNA
 import numpy as np
-import json
 
 
 class SparkGlobal(MRJob, GA):    
@@ -20,7 +19,7 @@ class SparkGlobal(MRJob, GA):
     """
 
     # All workers should have this files
-    # FILES = ['../Models/Base.py']
+    FILES = ['../Models/Base.py', '../data/locations.json']
 
     # Output protocol
     OUTPUT_PROTOCOL = TextProtocol
@@ -31,6 +30,8 @@ class SparkGlobal(MRJob, GA):
         """
 
         super(SparkGlobal, self).configure_args()
+        self.pass_arg_through('--runner')
+
         self.add_passthru_arg('-p', '--population-size', default=10, type=int)
         self.add_passthru_arg('-n', '--num-iterations', default=10, type=int)
         self.add_passthru_arg('-l', '--num-locations', default=10, type=int)
@@ -62,7 +63,10 @@ class SparkGlobal(MRJob, GA):
         sc = pyspark.SparkContext(appName ='TSPGlobal')
 
         # load data
-        self._get_locations_from_file('data/locations.json')
+        filename = 'locations.json'
+        if self.options.runner == 'spark':
+            filename = 'data/' + filename
+        self._get_locations_from_file(filename)
 
         # set constants
         num_iterations = self.options.num_iterations
@@ -153,7 +157,7 @@ class SparkGlobal(MRJob, GA):
             population, distances, fitness = unwrap_mat(dist)
             best_ids = np.argsort(distances)
             shortest.append(distances[best_ids[0]])
-
+            
         # save to file
         sc.parallelize([population[best_ids[0]].tolist(), shortest])\
             .saveAsTextFile(output_path)

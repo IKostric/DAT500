@@ -3,7 +3,6 @@ from mrjob.protocol import TextProtocol
 from Base import GA
 from Sequential import SGA
 import numpy as np
-import json
 
 
 class SparkIsland(MRJob, GA):
@@ -21,7 +20,7 @@ class SparkIsland(MRJob, GA):
     """
 
     # All workers should have this files
-    # FILES = ['../Models/Base.py', '../Models/Sequential.py']
+    FILES = ['../Models/Base.py', '../Models/Sequential.py', '../data/locations.json']
 
     # Output protocol
     OUTPUT_PROTOCOL = TextProtocol
@@ -65,7 +64,12 @@ class SparkIsland(MRJob, GA):
 
         # Initialize spark context
         sc = pyspark.SparkContext(appName="TSPIsland")
-        self._get_locations_from_file('data/locations.json')
+        
+        # load data
+        filename = 'locations.json'
+        if self.options.runner == 'spark':
+            filename = 'data/' + filename
+        self._get_locations_from_file(filename)
 
         #constants
         num_islands = self.options.num_islands
@@ -102,7 +106,7 @@ class SparkIsland(MRJob, GA):
         # Do final run after last migration occured
         last_run = (workers
                     .map(lambda ga: ga[1].run(population=populations[ga[0]], island=False))
-                    .map(lambda row: (row[0].tolist(), row[1]))
+                    .map(lambda row: [row[0].tolist(), row[1]])
                     .saveAsTextFile(output_path))
 
         sc.stop()
